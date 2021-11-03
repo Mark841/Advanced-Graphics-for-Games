@@ -5,7 +5,7 @@
 
 class Camera;
 class SceneNode;
-class MEsh;
+class Mesh;
 class Shader;
 
 class Renderer : public OGLRenderer
