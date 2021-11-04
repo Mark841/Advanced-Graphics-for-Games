@@ -15,6 +15,7 @@ HeightMap::HeightMap(const std::string& name)
 	vertices = new Vector3[numVertices];
 	textureCoords = new Vector2[numVertices];
 	indices = new GLuint[numIndices];
+	colours = new Vector4[numVertices];
 
 	Vector3 vertexScale = Vector3(16.0f, 1.0f, 16.0f);
 	Vector2 textureScale = Vector2(1 / 16.0f, 1 / 16.0f);
@@ -26,6 +27,7 @@ HeightMap::HeightMap(const std::string& name)
 			int offset = (z * iWidth) + x;
 			vertices[offset] = Vector3(x, data[offset], z) * vertexScale;
 			textureCoords[offset] = Vector2(x, z) * textureScale;
+			colours[offset] = Vector4(data[offset] / 255.0f, data[offset] / 255.0f, data[offset] / 255.0f, 1);
 		}
 	}
 	SOIL_free_image_data(data);
