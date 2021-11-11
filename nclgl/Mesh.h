@@ -56,6 +56,9 @@ public:
 	static Mesh* GenerateTriangle();
 	static Mesh* GenerateQuad();
 
+	void GenerateNormals();
+	bool GetVertexIndicesForTri(unsigned int i, unsigned int& a, unsigned int& b, unsigned int& c) const;
+
 	unsigned int GetTriCount() const {
 		int primCount = indices ? numIndices : numVertices;
 		return primCount / 3;
