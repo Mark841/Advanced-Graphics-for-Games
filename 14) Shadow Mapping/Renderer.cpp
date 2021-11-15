@@ -89,5 +89,47 @@ void Renderer::DrawShadowScene()
 
 	BindShader(shadowShader);
 
+	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
+	projMatrix = Matrix4::Perspective(1, 100, 1, 45);
+	shadowMatrix = projMatrix * viewMatrix;
 
+	for (int i = 0; i < 4; ++i)
+	{
+		modelMatrix = sceneTransforms[i];
+		UpdateShaderMatrices();
+		sceneMeshes[i]->Draw();
+	}
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glViewport(0, 0, width, height);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+void Renderer::DrawMainScene()
+{
+	BindShader(sceneShader);
+	SetShaderLight(*light);
+	viewMatrix = camera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "shadowTex"), 2);
+
+	glUniform3fv(glGetUniformLocation(sceneShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, sceneDiffuse);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, sceneBump);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		modelMatrix = sceneTransforms[i];
+		UpdateShaderMatrices();
+		sceneMeshes[i]->Draw();
+	}
 }
