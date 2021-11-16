@@ -1,4 +1,4 @@
-#include "/../NCLGL/window.h"
+#include "../nclgl/window.h"
 #include "Renderer.h"
 
 
