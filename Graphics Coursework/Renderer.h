@@ -37,5 +37,4 @@ protected:
 
 	float waterRotate;
 	float waterCycle;
-	float time;
 };

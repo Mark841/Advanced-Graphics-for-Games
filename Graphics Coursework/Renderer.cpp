@@ -8,7 +8,6 @@
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	quad = Mesh::GenerateQuad();
-	time = 0.0f;
 
 	heightMap = new HeightMap(TEXTUREDIR"noise.png");
 
@@ -16,7 +15,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	earthTex = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthBump = SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
-	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"tropical_right.jpg", TEXTUREDIR"tropical_left.jpg", TEXTUREDIR"tropical_top.jpg", TEXTUREDIR"tropical_bottom.jpg", TEXTUREDIR"tropical_front.jpg", TEXTUREDIR"tropical_back.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg", TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	if (!earthTex || !earthBump || !cubeMap || !waterTex)
 		return;
@@ -60,10 +59,9 @@ Renderer::~Renderer(void)
 void Renderer::UpdateScene(float dt)
 {
 	camera->UpdateCamera(dt);
-	time += dt;
 	viewMatrix = camera->BuildViewMatrix();
-	waterRotate += dt * 0.5f; // 0.5 degrees a second
-	waterCycle += dt * 0.0675f; // 2.5 units a second
+	waterRotate += dt * 2.0f; // 2 degrees a second
+	waterCycle += dt * 0.25f; // 10 units a second
 }
 void Renderer::RenderScene()
 {
@@ -111,9 +109,6 @@ void Renderer::DrawWater()
 	BindShader(reflectShader);
 
 	glUniform3fv(glGetUniformLocation(reflectShader->GetProgram(), "cameraPos"), 1, (float*)& camera->GetPosition());
-	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "time"), time);
-
-	std::cout << time << std::endl;
 
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "cubeTex"), 2);

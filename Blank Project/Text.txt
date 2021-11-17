@@ -1,0 +1,9 @@
+https://gamedev.stackexchange.com/questions/134496/water-wave-simulation
+
+https://blog.bonzaisoftware.com/tnp/gl-water-tutorial/
+
+https://github.com/Argzero/OpenGL-Water-Shader/blob/master/OPENGLTheFirstDive/Shaders/vertexShader.glsl
+
+https://github.com/CaffeineViking/osgw
+
+http://fire-face.com/personal/water/
