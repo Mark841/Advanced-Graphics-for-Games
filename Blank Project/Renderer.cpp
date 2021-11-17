@@ -111,9 +111,20 @@ void Renderer::DrawWater()
 	BindShader(reflectShader);
 
 	glUniform3fv(glGetUniformLocation(reflectShader->GetProgram(), "cameraPos"), 1, (float*)& camera->GetPosition());
-	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "time"), time);
 
-	std::cout << time << std::endl;
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "time"), time);
+	glUniform2f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[0].direction"), 1.0f, 0.0f);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[0].amplitude"), 1.0);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[0].steepness"), 0.5);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[0].frequency"), 1.0);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[0].speed"), 1.0);
+
+	glUniform2f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[1].direction"), 1.0f, 0.0f);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[1].amplitude"), 115.5);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[1].steepness"), 0.75);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[1].frequency"), 1.5);
+	glUniform1f(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWaves[1].speed"), 15.0);
+	glUniform1ui(glGetUniformLocation(reflectShader->GetProgram(), "gerstnerWavesLength"), 2);
 
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "cubeTex"), 2);
