@@ -51,24 +51,24 @@ void main(void)
 	// BLUR BETWEEN SAND AND PEBBLES
 	if (IN.worldPos.y >= sandStart && IN.worldPos.y < pebbleStart)
 	{
-		vec4 diffuse1 = texture(pebbleTex, IN.texCoord);
-		vec4 diffuse2 = texture(sandTex, IN.texCoord);
-		vec3 bumpNormal1 = texture(pebbleBumpTex, IN.texCoord).rgb;
-		vec3 bumpNormal2 = texture(sandBumpTex, IN.texCoord).rgb;
+		vec4 topTexture = texture(pebbleTex, IN.texCoord);
+		vec4 bottomTexture = texture(sandTex, IN.texCoord);
+		vec3 topTextureBump = texture(pebbleBumpTex, IN.texCoord).rgb;
+		vec3 bottomTextureBump = texture(sandBumpTex, IN.texCoord).rgb;
 		float weighting = (IN.worldPos.y / 20) - 6;
-		diffuse = mix(diffuse2, diffuse1, weighting);
-		bumpNormal = mix(bumpNormal2, bumpNormal1, weighting);
+		diffuse = mix(bottomTexture, topTexture, weighting);
+		bumpNormal = mix(bottomTextureBump, topTextureBump, weighting);
 	}
 	// BLUR BETWEEN PEBBLES AND GRASS
 	if (IN.worldPos.y >= pebbleStart && IN.worldPos.y < grassStart)
 	{
-		vec4 diffuse1 = texture(grassTex, IN.texCoord);
-		vec4 diffuse2 = texture(pebbleTex, IN.texCoord);
-		vec3 bumpNormal1 = texture(grassBumpTex, IN.texCoord).rgb;
-		vec3 bumpNormal2 = texture(pebbleBumpTex, IN.texCoord).rgb;
+		vec4 topTexture = texture(grassTex, IN.texCoord);
+		vec4 bottomTexture = texture(pebbleTex, IN.texCoord);
+		vec3 topTextureBump = texture(grassBumpTex, IN.texCoord).rgb;
+		vec3 bottomTextureBump = texture(pebbleBumpTex, IN.texCoord).rgb;
 		float weighting = ((IN.worldPos.y / 20) / 2) - 3.5;
-		diffuse = mix(diffuse2, diffuse1, weighting);
-		bumpNormal = mix(bumpNormal2, bumpNormal1, weighting);
+		diffuse = mix(bottomTexture, topTexture, weighting);
+		bumpNormal = mix(bottomTextureBump, topTextureBump, weighting);
 	}
 	// PAINT GRASS
 	if (IN.worldPos.y >= grassStart && IN.worldPos.y < 220)
@@ -79,13 +79,13 @@ void main(void)
 	// BLUR BETWEEN GRASS AND STONE
 	if (IN.worldPos.y >= 220 && IN.worldPos.y < stoneStart)
 	{
-		vec4 diffuse1 = texture(stoneTex, IN.texCoord);
-		vec4 diffuse2 = texture(grassTex, IN.texCoord);
-		vec3 bumpNormal1 = texture(stoneBumpTex, IN.texCoord).rgb;
-		vec3 bumpNormal2 = texture(grassBumpTex, IN.texCoord).rgb;
+		vec4 topTexture = texture(stoneTex, IN.texCoord);
+		vec4 bottomTexture = texture(grassTex, IN.texCoord);
+		vec3 topTextureBump = texture(stoneBumpTex, IN.texCoord).rgb;
+		vec3 bottomTextureBump = texture(grassBumpTex, IN.texCoord).rgb;
 		float weighting = (IN.worldPos.y / 20) - 11;
-		diffuse = mix(diffuse2, diffuse1, weighting);
-		bumpNormal = mix(bumpNormal2, bumpNormal1, weighting);
+		diffuse = mix(bottomTexture, topTexture, weighting);
+		bumpNormal = mix(bottomTextureBump, topTextureBump, weighting);
 	}
 	// PAINT STONE
 	if (IN.worldPos.y >= stoneStart)
