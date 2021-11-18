@@ -7,3 +7,22 @@ https://github.com/Argzero/OpenGL-Water-Shader/blob/master/OPENGLTheFirstDive/Sh
 https://github.com/CaffeineViking/osgw
 
 http://fire-face.com/personal/water/
+
+
+References:
+
+Island noise:
+http://kitfox.com/projects/perlinNoiseMaker/
+
+Stone path texture and bumpmap:
+https://www.gamedev.net/forums/topic/662328-opengl-bump-map-texture-artifacts/
+
+Sand texture and bumpmap:
+http://www.texturise.club/2013/09/seamless-beach-sand-footsteps-maps.html
+
+Grass texture and bumpmap:
+http://www.texturise.club/2013/08/seamless-green-grass-rough-maps.html
+
+Pebble Beach texture and bumpmap:
+http://www.texturise.club/2013/09/seamless-beach-sand-and-shells-texture.html
+

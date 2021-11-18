@@ -5,6 +5,7 @@
 class HeightMap : public Mesh
 {
 public:
+	HeightMap();
 	HeightMap(const std::string& name);
 	~HeightMap(void) {};
 

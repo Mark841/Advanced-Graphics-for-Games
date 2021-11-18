@@ -20,11 +20,12 @@ protected:
 	void DrawWater();
 	void DrawSkybox();
 
-	Shader* lightShader;
-	Shader* reflectShader;
+	Shader* islandShader;
+	Shader* waterShader;
 	Shader* skyboxShader;
 
 	HeightMap* heightMap;
+	HeightMap* waterMap;
 	Mesh* quad;
 
 	Light* light;
@@ -32,8 +33,14 @@ protected:
 
 	GLuint cubeMap;
 	GLuint waterTex;
-	GLuint earthTex;
-	GLuint earthBump;
+	GLuint sandTex;
+	GLuint sandBump;
+	GLuint grassTex;
+	GLuint grassBump;
+	GLuint pebbleTex;
+	GLuint pebbleBump;
+	GLuint stoneTex;
+	GLuint stoneBump;
 
 	float waterRotate;
 	float waterCycle;
