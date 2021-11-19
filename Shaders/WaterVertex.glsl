@@ -32,7 +32,7 @@ out Vertex
 
 vec3 gerstner_wave_position(vec3 position, float time)
 {
-	vec3 wavePosition = vec3(position.x, 100, position.z);
+	vec3 wavePosition = vec3(position.x, 200, position.z);
 	for (int i = 0; i < gerstnerWavesLength; ++i)
 	{	
 		float phase = time * gerstnerWaves[i].speed;

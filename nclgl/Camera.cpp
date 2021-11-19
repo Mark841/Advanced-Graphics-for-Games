@@ -49,10 +49,6 @@ void Camera::UpdateCamera(float dt)
 
 Matrix4 Camera::BuildViewMatrix()
 {
-	/*return Matrix4::Rotation(-pitch, Vector3(1, 0, 0)) *
-		Matrix4::Rotation(-yaw, Vector3(0, 1, 0)) *
-		Matrix4::Translation(-position) * 
-		Matrix4::Scale(Vector3(1, 5, 1)); */
 	return Matrix4::Rotation(-pitch, Vector3(1, 0, 0)) *
 		Matrix4::Rotation(-yaw, Vector3(0, 1, 0)) *
 		Matrix4::Rotation(-roll, Vector3(0, 0, 1)) *

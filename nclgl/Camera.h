@@ -17,7 +17,7 @@ public:
 	void SetPosition(Vector3 val) { position = val; }
 
 	float GetYaw() const { return yaw; }
-	float SetYaw(float y) { yaw = y; }
+	void SetYaw(float y) { yaw = y; }
 
 	float GetPitch() const { return pitch; }
 	void SetPitch(float p) { pitch = p; }

@@ -37,10 +37,10 @@ void main(void)
 	vec4 diffuse = texture(sandTex, IN.texCoord);
 	vec3 bumpNormal = texture(sandBumpTex, IN.texCoord).rgb;
 	
-	int sandStart = 120;
-	int pebbleStart = 140;
-	int grassStart = 180;
-	int stoneStart = 240;
+	int sandStart = 200;
+	int pebbleStart = 220;
+	int grassStart = 260;
+	int stoneStart = 320;
 
 	// PAINT SAND
 	if (IN.worldPos.y < sandStart)
@@ -55,7 +55,7 @@ void main(void)
 		vec4 bottomTexture = texture(sandTex, IN.texCoord);
 		vec3 topTextureBump = texture(pebbleBumpTex, IN.texCoord).rgb;
 		vec3 bottomTextureBump = texture(sandBumpTex, IN.texCoord).rgb;
-		float weighting = (IN.worldPos.y / 20) - 6;
+		float weighting = (IN.worldPos.y / 20) - 10;
 		diffuse = mix(bottomTexture, topTexture, weighting);
 		bumpNormal = mix(bottomTextureBump, topTextureBump, weighting);
 	}
@@ -66,24 +66,24 @@ void main(void)
 		vec4 bottomTexture = texture(pebbleTex, IN.texCoord);
 		vec3 topTextureBump = texture(grassBumpTex, IN.texCoord).rgb;
 		vec3 bottomTextureBump = texture(pebbleBumpTex, IN.texCoord).rgb;
-		float weighting = ((IN.worldPos.y / 20) / 2) - 3.5;
+		float weighting = ((IN.worldPos.y / 20) / 2) - 5.5;
 		diffuse = mix(bottomTexture, topTexture, weighting);
 		bumpNormal = mix(bottomTextureBump, topTextureBump, weighting);
 	}
 	// PAINT GRASS
-	if (IN.worldPos.y >= grassStart && IN.worldPos.y < 220)
+	if (IN.worldPos.y >= grassStart && IN.worldPos.y < 300)
 	{
 		diffuse = texture(grassTex, IN.texCoord);
 		bumpNormal = texture(grassBumpTex, IN.texCoord).rgb;
 	}
 	// BLUR BETWEEN GRASS AND STONE
-	if (IN.worldPos.y >= 220 && IN.worldPos.y < stoneStart)
+	if (IN.worldPos.y >= 300 && IN.worldPos.y < stoneStart)
 	{
 		vec4 topTexture = texture(stoneTex, IN.texCoord);
 		vec4 bottomTexture = texture(grassTex, IN.texCoord);
 		vec3 topTextureBump = texture(stoneBumpTex, IN.texCoord).rgb;
 		vec3 bottomTextureBump = texture(grassBumpTex, IN.texCoord).rgb;
-		float weighting = (IN.worldPos.y / 20) - 11;
+		float weighting = (IN.worldPos.y / 20) - 15;
 		diffuse = mix(bottomTexture, topTexture, weighting);
 		bumpNormal = mix(bottomTextureBump, topTextureBump, weighting);
 	}

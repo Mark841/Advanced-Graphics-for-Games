@@ -15,6 +15,9 @@ public:
 	const Matrix4& GetTransform() const { return transform; }
 	Matrix4 GetWorldTransform() const {	return worldTransform; }
 
+	Shader* GetShader() const { return shader; }
+	void SetShader(Shader* newShader) { shader = newShader; }
+
 	Vector4 GetColour() const { return colour; }
 	void SetColour(Vector4 c) { colour = c; }
 
@@ -43,6 +46,7 @@ public:
 	std::vector<SceneNode*>::const_iterator GetChildIteratorEnd() { return children.end(); }
 
 protected:
+	Shader* shader;
 	SceneNode* parent;
 	Mesh* mesh;
 	Matrix4 worldTransform;

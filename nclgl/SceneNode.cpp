@@ -2,6 +2,7 @@
 
 SceneNode::SceneNode(Mesh* mesh, Vector4 colour)
 {
+	this->shader = NULL;
 	this->mesh = mesh;
 	this->colour = colour;
 	parent = NULL;

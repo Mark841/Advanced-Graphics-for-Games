@@ -1,7 +1,7 @@
 #version 330 core
 
-uniform sampler2D diffuseTex;
-uniform samplerCube cubeTex;
+uniform sampler2D waterTex;
+uniform samplerCube skyboxTex;
 
 uniform vec3 cameraPos;
 
@@ -17,11 +17,11 @@ out vec4 fragColour;
 
 void main(void)
 {
-	vec4 diffuse = texture(diffuseTex, IN.texCoord);
+	vec4 diffuse = texture(waterTex, IN.texCoord);
 	vec3 viewDir = normalize(cameraPos - IN.worldPos);
 
 	vec3 reflectDir = reflect(-viewDir, normalize(IN.normal));
-	vec4 reflectTex = texture(cubeTex, reflectDir);
+	vec4 reflectTex = texture(skyboxTex, reflectDir);
 
 	fragColour = reflectTex + (diffuse * 0.25f);
 	fragColour.a = 0.65f;

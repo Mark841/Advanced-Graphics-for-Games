@@ -2,8 +2,8 @@
 
 HeightMap::HeightMap()
 {
-	int iWidth = 257;
-	int iHeight = 257;
+	int iWidth = 512;
+	int iHeight = 512;
 	
 	numVertices = iWidth * iHeight;
 	numIndices = (iWidth - 1) * (iHeight - 1) * 6;
@@ -12,7 +12,7 @@ HeightMap::HeightMap()
 	indices = new GLuint[numIndices];
 	colours = new Vector4[numVertices];
 
-	Vector3 vertexScale = Vector3(16.0f, 1.0f, 16.0f);
+	Vector3 vertexScale = Vector3(16.0f, 3.0f, 16.0f);
 	Vector2 textureScale = Vector2(1 / 16.0f, 1 / 16.0f);
 
 	int* data = new int[(iWidth * iHeight)];
@@ -75,7 +75,7 @@ HeightMap::HeightMap(const std::string& name)
 	indices = new GLuint[numIndices];
 	colours = new Vector4[numVertices];
 
-	Vector3 vertexScale = Vector3(16.0f, 1.0f, 16.0f);
+	Vector3 vertexScale = Vector3(16.0f, 3.0f, 16.0f);
 	Vector2 textureScale = Vector2(1 / 16.0f, 1 / 16.0f);
 
 	for (int z = 0; z < iHeight; ++z)
