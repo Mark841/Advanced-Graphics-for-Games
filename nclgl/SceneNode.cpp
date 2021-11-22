@@ -4,12 +4,15 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour)
 {
 	this->shader = NULL;
 	this->mesh = mesh;
+	anim = nullptr;
+	material = nullptr;
 	this->colour = colour;
 	parent = NULL;
 	boundingRadius = 1.0f;
 	distanceFromCamera = 0.0f;
 	texture = 0;
 	modelScale = Vector3(1, 1, 1);
+	animated = false;
 }
 SceneNode::~SceneNode(void)
 {

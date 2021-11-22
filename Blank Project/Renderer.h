@@ -15,6 +15,7 @@ public:
 
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
+	void ToggleDayNight() { activeDayNight = !activeDayNight; }
 
 	bool followWaypoints;
 
@@ -39,6 +40,8 @@ protected:
 	Shader* islandShader;
 	Shader* waterShader;
 	Shader* skyboxShader;
+	Shader* treeShader;
+	Shader* skeletonShader;
 
 	Mesh* quad;
 
@@ -61,4 +64,8 @@ protected:
 	float waterRotate;
 	float waterCycle;
 	float time;
+	bool activeDayNight;
+
+	int currentFrame;
+	float frameTime;
 };

@@ -4,11 +4,16 @@
 #include "../nclgl/Camera.h"
 #include "../nclgl/HeightMap.h"
 #include "../nclgl/Shader.h"
+#include "../nclgl/MeshAnimation.h"
+#include "../nclgl/MeshMaterial.h"
+#include "SkeletalAnimation.h"
+#include "Tree.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	quad = Mesh::GenerateQuad();
 	time = 0.0f;
+	activeDayNight = true;
 
 	HeightMap* heightMapMesh = new HeightMap(TEXTUREDIR"noiseTexture512.png");
 	HeightMap* waterMapMesh = new HeightMap();
@@ -21,7 +26,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	Vector3 heightMapSize = heightMapMesh->GetHeightMapSize();
 	camera = new Camera(-15.0f, 0.0f, 0.0f, heightMapSize * Vector3(0.5f, 1.0f, 1.0f));
-	sun = new Light(heightMapSize * Vector3(0.5f, 5.0f, 0.5f), Vector4(1, 1, 1, 1), heightMapSize.x*10);
+	sun = new Light(heightMapSize * Vector3(0.5f, 8.0f, 0.5f), Vector4(1, 1, 1, 1), heightMapSize.x*10);
 	
 	std::cout << heightMapSize << std::endl;
 
@@ -40,16 +45,32 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	heightMap->SetShader(islandShader);
 	waterMap->SetShader(waterShader);
-
+	
 	root->AddChild(heightMap);
 	root->AddChild(waterMap);
 
+	SkeletalAnimation* soldier = new SkeletalAnimation(Mesh::LoadFromMeshFile("Role_T.msh"), new MeshAnimation("Role_T.anm"), new MeshMaterial("Role_T.mat"), skeletonShader, Vector3(250,200,250));
+	heightMap->AddChild(soldier);
+
+	Mesh* cylinder = Mesh::LoadFromMeshFile("../Meshes/Cylinder.msh");
+	Mesh* cone = Mesh::LoadFromMeshFile("../Meshes/Cone.msh");
+	for (int i = 0; i < 500; ++i)
+	{
+		int xCoord = rand() % ((int)heightMapSize.x / 2) + (heightMapSize.x / 4);
+		int zCoord = rand() % ((int)heightMapSize.z / 2) + (heightMapSize.z / 4);
+		int yCoord = heightMapMesh->GetHeightAtCoord(xCoord, zCoord) + 30;
+		heightMap->AddChild(new Tree(cylinder, cone, treeShader, Vector3(xCoord, yCoord, zCoord)));
+	}
+	
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	currentFrame = 0;
+	frameTime = 0.0f;
 	waterRotate = 0.0f;
 	waterCycle = 0.0f;
 	init = true;
@@ -77,7 +98,11 @@ void Renderer::UpdateScene(float dt)
 	viewMatrix = camera->BuildViewMatrix();
 	waterRotate += dt * 0.5f; // 0.5 degrees a second
 	waterCycle += dt * 0.0675f; // 2.5 units a second
-	//DayNightCycle(dt);
+
+	root->Update(dt);
+
+	if (activeDayNight)
+		DayNightCycle(dt);
 }
 void Renderer::RenderScene()
 {
@@ -85,48 +110,6 @@ void Renderer::RenderScene()
 	// ordering of these sub calls is important
 	DrawSkybox();
 	DrawNode(root);
-}
-
-bool Renderer::InitialiseTextures()
-{
-	waterTex = SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	sandTex = SOIL_load_OGL_texture(TEXTUREDIR"sandTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	sandBump = SOIL_load_OGL_texture(TEXTUREDIR"sandBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	pebbleTex = SOIL_load_OGL_texture(TEXTUREDIR"pebbleBeachTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	pebbleBump = SOIL_load_OGL_texture(TEXTUREDIR"pebbleBeachBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	grassTex = SOIL_load_OGL_texture(TEXTUREDIR"grassTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	grassBump = SOIL_load_OGL_texture(TEXTUREDIR"grassBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	stoneTex = SOIL_load_OGL_texture(TEXTUREDIR"stonePathTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	stoneBump = SOIL_load_OGL_texture(TEXTUREDIR"stonePathBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-
-	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"tropical_right.jpg", TEXTUREDIR"tropical_left.jpg", TEXTUREDIR"tropical_top.jpg", TEXTUREDIR"tropical_bottom.jpg", TEXTUREDIR"tropical_front.jpg", TEXTUREDIR"tropical_back.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
-
-	if (!sandTex || !sandBump || !grassTex || !grassBump || !stoneTex || !stoneBump || !cubeMap || !waterTex)
-		return false;
-
-	SetTextureRepeating(sandTex, true);
-	SetTextureRepeating(sandBump, true);
-	SetTextureRepeating(grassTex, true);
-	SetTextureRepeating(grassBump, true);
-	SetTextureRepeating(pebbleTex, true);
-	SetTextureRepeating(pebbleBump, true);
-	SetTextureRepeating(stoneTex, true);
-	SetTextureRepeating(stoneBump, true);
-	SetTextureRepeating(waterTex, true);
-
-	return true;
-}
-bool Renderer::InitialiseShaders()
-{
-	waterShader = new Shader("WaterVertex.glsl", "WaterFragment.glsl");
-	skyboxShader = new Shader("SkyboxVertex.glsl", "SkyboxFragment.glsl");
-	islandShader = new Shader("IslandVertex.glsl", "IslandFragment.glsl");
-	sceneShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
-
-	if (!waterShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !islandShader->LoadSuccess())
-		return false;
-
-	return true;
 }
 
 void Renderer::MoveCamera()
@@ -190,17 +173,45 @@ bool Renderer::CheckCameraDistance(Vector3 distance, float speed)
 
 void Renderer::DrawNode(SceneNode* n)
 {
-	if (n->GetMesh())
+	if (n->IsAnimated())
 	{
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-
 		passInfoToShader(n->GetShader(), model, n);
-		SetShaderLight(*sun);
-		modelMatrix.ToIdentity();
-		textureMatrix.ToIdentity();
+		glUniform1i(glGetUniformLocation(n->GetShader()->GetProgram(), "diffuseTex"), 10);
 		UpdateShaderMatrices();
 
-		n->Draw(*this);
+		vector<Matrix4> frameMatrices;
+
+		const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
+		const Matrix4* frameData = n->GetAnim()->GetJointData(currentFrame);
+
+		for (unsigned int i = 0; i < n->GetMesh()->GetJointCount(); ++i)
+		{
+			frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+		}
+
+		int j = glGetUniformLocation(n->GetShader()->GetProgram(), "joints");
+		glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+
+		for (int i = 0; i < n->GetMesh()->GetSubMeshCount(); ++i)
+		{
+			glActiveTexture(GL_TEXTURE10);
+			glBindTexture(GL_TEXTURE_2D, n->GetMatTextures()[i]);
+			n->GetMesh()->DrawSubMesh(i);
+		}
+	}
+	else
+	{
+		if (n->GetMesh())
+		{
+			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+			modelMatrix = model;
+			passInfoToShader(n->GetShader(), model, n);
+			SetShaderLight(*sun);
+			UpdateShaderMatrices();
+
+			n->Draw(*this);
+		}
 	}
 
 	for (vector<SceneNode*>::const_iterator i = n->GetChildIteratorStart(); i != n->GetChildIteratorEnd(); ++i)
@@ -211,7 +222,7 @@ void Renderer::DrawNode(SceneNode* n)
 
 void Renderer::DayNightCycle(float dt)
 {
-	sun->SetPosition(Rotate(3 * dt, Vector3(1, 0, 1), sun->GetPosition()));
+	sun->SetPosition(Rotate(3 * dt, Vector3(4088, 0, 4088), sun->GetPosition()));
 }
 Vector3 Renderer::Rotate(float angle, Vector3 axis, Vector3 position)
 {
@@ -235,6 +246,49 @@ void Renderer::DrawSkybox()
 	glDepthMask(GL_TRUE);
 }
 
+bool Renderer::InitialiseTextures()
+{
+	waterTex = SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sandTex = SOIL_load_OGL_texture(TEXTUREDIR"sandTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sandBump = SOIL_load_OGL_texture(TEXTUREDIR"sandBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	pebbleTex = SOIL_load_OGL_texture(TEXTUREDIR"pebbleBeachTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	pebbleBump = SOIL_load_OGL_texture(TEXTUREDIR"pebbleBeachBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	grassTex = SOIL_load_OGL_texture(TEXTUREDIR"grassTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	grassBump = SOIL_load_OGL_texture(TEXTUREDIR"grassBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	stoneTex = SOIL_load_OGL_texture(TEXTUREDIR"stonePathTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	stoneBump = SOIL_load_OGL_texture(TEXTUREDIR"stonePathBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"tropical_right.jpg", TEXTUREDIR"tropical_left.jpg", TEXTUREDIR"tropical_top.jpg", TEXTUREDIR"tropical_bottom.jpg", TEXTUREDIR"tropical_front.jpg", TEXTUREDIR"tropical_back.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+
+	if (!sandTex || !sandBump || !grassTex || !grassBump || !stoneTex || !stoneBump || !cubeMap || !waterTex)
+		return false;
+
+	SetTextureRepeating(sandTex, true);
+	SetTextureRepeating(sandBump, true);
+	SetTextureRepeating(grassTex, true);
+	SetTextureRepeating(grassBump, true);
+	SetTextureRepeating(pebbleTex, true);
+	SetTextureRepeating(pebbleBump, true);
+	SetTextureRepeating(stoneTex, true);
+	SetTextureRepeating(stoneBump, true);
+	SetTextureRepeating(waterTex, true);
+
+	return true;
+}
+bool Renderer::InitialiseShaders()
+{
+	waterShader = new Shader("WaterVertex.glsl", "WaterFragment.glsl");
+	skyboxShader = new Shader("SkyboxVertex.glsl", "SkyboxFragment.glsl");
+	islandShader = new Shader("IslandVertex.glsl", "IslandFragment.glsl");
+	sceneShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	treeShader = new Shader("TreeVertex.glsl", "TreeFragment.glsl");
+	skeletonShader = new Shader("SkinningVertex.glsl", "TexturedFragment.glsl");
+
+	if (!waterShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !islandShader->LoadSuccess() || !sceneShader->LoadSuccess() || !treeShader->LoadSuccess() || !skeletonShader->LoadSuccess())
+		return false;
+
+	return true;
+}
 void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 {
 	BindShader(shader);
@@ -288,7 +342,7 @@ void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 	glUniform1i(glGetUniformLocation(shader->GetProgram(), "waterTex"), 9);
 	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, waterTex);
-
+	
 	// WAVE DATA 
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "time"), time);
 	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[0].direction"), 1.0f, 0.0f);

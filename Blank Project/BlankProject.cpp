@@ -26,6 +26,9 @@ int main()	{
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_X)) {
 			renderer.followWaypoints = false;
 		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_P)) {
+			renderer.ToggleDayNight();
+		}
 	}
 	return 0;
 }

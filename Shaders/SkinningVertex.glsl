@@ -14,7 +14,7 @@ uniform mat4 joints[128];
 out Vertex
 {
 	vec2 texCoord;
-	vec4 jointWeights;
+	//vec4 jointWeights;
 } OUT;
 
 void main(void)
@@ -33,5 +33,5 @@ void main(void)
 	mat4 mvp = projMatrix * viewMatrix * modelMatrix;
 	gl_Position = mvp * vec4(skelPos.xyz, 1.0);
 	OUT.texCoord = texCoord;
-	OUT.jointWeights = jointWeights;
+	//OUT.jointWeights = jointWeights;
 }
