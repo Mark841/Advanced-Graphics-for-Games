@@ -25,12 +25,14 @@ protected:
 	bool InitialiseBuffers();
 
 	void MoveCamera();
+	void UpdateMiniMapCamera();
 	bool CheckCameraDistance(Vector3 distance, float speed);
 
 	void PresentScene();
 	void DrawPostProcess();
 	void DrawScene();
 	void DrawNode(SceneNode* n);
+	void DrawMiniMap();
 
 	void DayNightCycle(float dt);
 	Vector3 Rotate(float angle, Vector3 axis, Vector3 position);
@@ -51,14 +53,20 @@ protected:
 	Shader* postProcessShader;
 
 	GLuint bufferFBO;
+	GLuint mapFBO;
 	GLuint processFBO;
 	GLuint bufferColourTex[2];
 	GLuint bufferDepthTex;
+	GLuint mapDepthTex;
+	GLuint mapColourTex[2];
 
 	Mesh* quad;
+	Mesh* miniMap;
+	Matrix4 mapViewMatrix;
 
 	Light* sun;
 	Camera* camera;
+	Camera* miniMapCamera;
 	int waypointReached;
 	Vector3* cameraWaypoints;
 

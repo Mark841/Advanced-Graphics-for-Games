@@ -9,11 +9,12 @@
 #include "SkeletalAnimation.h"
 #include "Tree.h"
 
-const int POST_PASSES = 10;
+const int POST_PASSES = 100;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	quad = Mesh::GenerateQuad();
+	miniMap = Mesh::LoadFromMeshFile("../Meshes/Sphere.msh");
 	time = 0.0f;
 	activeDayNight = true;
 
@@ -31,6 +32,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	Vector3 heightMapSize = heightMapMesh->GetHeightMapSize();
 	camera = new Camera(-15.0f, 0.0f, 0.0f, heightMapSize * Vector3(0.5f, 1.0f, 1.0f));
+	miniMapCamera = new Camera(-90.0f, 0.0f, 0.0f, camera->GetPosition());
 	sun = new Light(heightMapSize * Vector3(0.5f, 8.0f, 0.5f), Vector4(1, 1, 1, 1), heightMapSize.x*10);
 	
 	std::cout << heightMapSize << std::endl;
@@ -59,7 +61,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	Mesh* cylinder = Mesh::LoadFromMeshFile("../Meshes/Cylinder.msh");
 	Mesh* cone = Mesh::LoadFromMeshFile("../Meshes/Cone.msh");
-	for (int i = 0; i < 500; ++i)
+	for (int i = 0; i < 50; ++i)
 	{
 		int xCoord = rand() % ((int)heightMapSize.x / 2) + (heightMapSize.x / 4);
 		int zCoord = rand() % ((int)heightMapSize.z / 2) + (heightMapSize.z / 4);
@@ -104,8 +106,11 @@ void Renderer::UpdateScene(float dt)
 	else
 		camera->UpdateCamera(dt);
 
+	UpdateMiniMapCamera();
+
 	time += dt;
 	viewMatrix = camera->BuildViewMatrix();
+	mapViewMatrix = miniMapCamera->BuildViewMatrix();
 	waterRotate += dt * 0.5f; // 0.5 degrees a second
 	waterCycle += dt * 0.0675f; // 2.5 units a second
 
@@ -116,14 +121,22 @@ void Renderer::UpdateScene(float dt)
 }
 void Renderer::RenderScene()
 {
+	// Draw main scene
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	DrawScene();
 	DrawPostProcess();
+
+	// Draw scene again but for map
+	glBindFramebuffer(GL_FRAMEBUFFER, mapFBO);
+	viewMatrix = mapViewMatrix;
+	DrawScene();
+
+	// Display scene
 	PresentScene();
 }
 
 void Renderer::DrawScene()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
@@ -182,8 +195,16 @@ void Renderer::PresentScene()
 	projMatrix.ToIdentity();
 	UpdateShaderMatrices();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
 	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "diffuseTex"), 0);
+
+	// draw minimap
+	glBindTexture(GL_TEXTURE_2D, mapColourTex[0]);
+	glViewport(0, 0, width / 2, height / 2);
+	quad->Draw();
+
+	// draw scene
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
+	glViewport(0, 0, width, height);
 	quad->Draw();
 }
 
@@ -239,6 +260,14 @@ void Renderer::MoveCamera()
 		waypointReached = -1;
 	}
 }
+void Renderer::UpdateMiniMapCamera()
+{
+	miniMapCamera->SetPosition(camera->GetPosition());
+	miniMapCamera->SetPosition(Vector3(miniMapCamera->GetPosition().x, heightMapMesh->GetHeightMapSize().y * 3, miniMapCamera->GetPosition().z));
+	miniMapCamera->SetPitch(-90);
+	miniMapCamera->SetYaw(0);
+	miniMapCamera->SetRoll(0);
+}
 bool Renderer::CheckCameraDistance(Vector3 distance, float speed)
 {
 	if ((distance.x <= (0.5 * speed) && distance.x >= -(0.5 * speed)) && (distance.y <= (0.5 * speed) && distance.y >= -(0.5 * speed)) &&(distance.z <= (0.5 * speed) && distance.z >= -(0.5 * speed)))
@@ -248,7 +277,7 @@ bool Renderer::CheckCameraDistance(Vector3 distance, float speed)
 
 void Renderer::DrawNode(SceneNode* n)
 {
-	if (n->IsAnimated())
+	/*if (n->IsAnimated())
 	{
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
 		passInfoToShader(n->GetShader(), model, n);
@@ -276,7 +305,7 @@ void Renderer::DrawNode(SceneNode* n)
 		}
 	}
 	else
-	{
+	{*/
 		if (n->GetMesh())
 		{
 			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
@@ -287,7 +316,7 @@ void Renderer::DrawNode(SceneNode* n)
 
 			n->Draw(*this);
 		}
-	}
+	//}
 	for (vector<SceneNode*>::const_iterator i = n->GetChildIteratorStart(); i != n->GetChildIteratorEnd(); ++i)
 	{
 		DrawNode(*i);
@@ -387,7 +416,29 @@ bool Renderer::InitialiseBuffers()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	}
 
+	// Generate map depth texture
+	glGenTextures(1, &mapDepthTex);
+	glBindTexture(GL_TEXTURE_2D, mapDepthTex);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+
+	// and colour texture
+	for (int i = 0; i < 2; ++i)
+	{
+		glGenTextures(1, &mapColourTex[i]);
+		glBindTexture(GL_TEXTURE_2D, mapColourTex[i]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	}
+
 	glGenFramebuffers(1, &bufferFBO);	// Render scene into this
+	glGenFramebuffers(1, &mapFBO);	// Render map into this
 	glGenFramebuffers(1, &processFBO);	// Do post processing here
 
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
@@ -395,8 +446,13 @@ bool Renderer::InitialiseBuffers()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, mapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mapDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, mapDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mapColourTex[0], 0);
+
 	// We can check FBO attacment success using this command
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0])
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0] || !mapDepthTex || !mapColourTex[0])
 	{
 		return false;
 	}
@@ -466,10 +522,10 @@ void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[0].frequency"), 0.005);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[0].speed"), 0.5);
 
-	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].direction"), 1.0f, 0.0f);
+	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].direction"), 1.0f, 1.0f);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].amplitude"), 20.0);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].steepness"), 15.0);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].frequency"), 0.001);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].speed"), 1.0);
-	glUniform1i(glGetUniformLocation(shader->GetProgram(), "gerstnerWavesLength"), 2);
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "gerstnerWavesLength"), 1);
 }
