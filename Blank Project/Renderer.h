@@ -80,6 +80,7 @@ protected:
 	GLuint pebbleBump;
 	GLuint stoneTex;
 	GLuint stoneBump;
+	GLuint heightMapTex;
 
 	float waterRotate;
 	float waterCycle;

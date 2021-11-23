@@ -360,10 +360,11 @@ bool Renderer::InitialiseTextures()
 	grassBump = SOIL_load_OGL_texture(TEXTUREDIR"grassBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	stoneTex = SOIL_load_OGL_texture(TEXTUREDIR"stonePathTexture.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	stoneBump = SOIL_load_OGL_texture(TEXTUREDIR"stonePathBumpMap.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	heightMapTex = SOIL_load_OGL_texture(TEXTUREDIR"noiseTexture512.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"tropical_right.jpg", TEXTUREDIR"tropical_left.jpg", TEXTUREDIR"tropical_top.jpg", TEXTUREDIR"tropical_bottom.jpg", TEXTUREDIR"tropical_front.jpg", TEXTUREDIR"tropical_back.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!sandTex || !sandBump || !grassTex || !grassBump || !stoneTex || !stoneBump || !cubeMap || !waterTex)
+	if (!sandTex || !sandBump || !grassTex || !grassBump || !stoneTex || !stoneBump || !cubeMap || !waterTex || !heightMapTex)
 		return false;
 
 	SetTextureRepeating(sandTex, true);
@@ -513,6 +514,10 @@ void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 	glUniform1i(glGetUniformLocation(shader->GetProgram(), "waterTex"), 9);
 	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, waterTex);
+
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "heightMapTex"), 10);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_2D, heightMapTex);
 	
 	// WAVE DATA 
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "time"), time);
