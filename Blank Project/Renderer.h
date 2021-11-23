@@ -22,10 +22,14 @@ public:
 protected:
 	bool InitialiseTextures();
 	bool InitialiseShaders();
+	bool InitialiseBuffers();
 
 	void MoveCamera();
 	bool CheckCameraDistance(Vector3 distance, float speed);
 
+	void PresentScene();
+	void DrawPostProcess();
+	void DrawScene();
 	void DrawNode(SceneNode* n);
 
 	void DayNightCycle(float dt);
@@ -34,6 +38,8 @@ protected:
 
 	void passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n);
 
+	HeightMap* heightMapMesh;
+	HeightMap* waterMapMesh;
 	SceneNode* root;
 
 	Shader* sceneShader;
@@ -42,6 +48,12 @@ protected:
 	Shader* skyboxShader;
 	Shader* treeShader;
 	Shader* skeletonShader;
+	Shader* postProcessShader;
+
+	GLuint bufferFBO;
+	GLuint processFBO;
+	GLuint bufferColourTex[2];
+	GLuint bufferDepthTex;
 
 	Mesh* quad;
 

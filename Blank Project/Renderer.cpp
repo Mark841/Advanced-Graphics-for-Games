@@ -9,19 +9,24 @@
 #include "SkeletalAnimation.h"
 #include "Tree.h"
 
+const int POST_PASSES = 10;
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	quad = Mesh::GenerateQuad();
 	time = 0.0f;
 	activeDayNight = true;
 
-	HeightMap* heightMapMesh = new HeightMap(TEXTUREDIR"noiseTexture512.png");
-	HeightMap* waterMapMesh = new HeightMap();
+	heightMapMesh = new HeightMap(TEXTUREDIR"noiseTexture512.png");
+	waterMapMesh = new HeightMap();
 
 	if (!InitialiseTextures())
 		return;
 
 	if (!InitialiseShaders())
+		return;
+
+	if (!InitialiseBuffers())
 		return;
 
 	Vector3 heightMapSize = heightMapMesh->GetHeightMapSize();
@@ -62,8 +67,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 		heightMap->AddChild(new Tree(cylinder, cone, treeShader, Vector3(xCoord, yCoord, zCoord)));
 	}
 	
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
-
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -84,7 +87,14 @@ Renderer::~Renderer(void)
 	delete waterShader;
 	delete skyboxShader;
 	delete islandShader;
+	delete skeletonShader;
+	delete postProcessShader;
 	delete sun;
+
+	glDeleteTextures(2, bufferColourTex);
+	glDeleteTextures(1, &bufferDepthTex);
+	glDeleteFramebuffers(1, &bufferFBO);
+	glDeleteFramebuffers(1, &processFBO);
 }
 
 void Renderer::UpdateScene(float dt)
@@ -106,10 +116,75 @@ void Renderer::UpdateScene(float dt)
 }
 void Renderer::RenderScene()
 {
+	DrawScene();
+	DrawPostProcess();
+	PresentScene();
+}
+
+void Renderer::DrawScene()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	// ordering of these sub calls is important
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+
 	DrawSkybox();
 	DrawNode(root);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+void Renderer::DrawPostProcess()
+{
+	// If camera is underwater apply blur, cant get exact location for when camera goes underwater as calculations are applied in the shader for manipulating the mesh vertexs
+	if ((camera->GetPosition().x > 0 && camera->GetPosition().x < waterMapMesh->GetHeightMapSize().x) && (camera->GetPosition().z > 0 && camera->GetPosition().z < waterMapMesh->GetHeightMapSize().z))
+	{
+		if (camera->GetPosition().y < waterMapMesh->GetHeightAtCoord(camera->GetPosition().x, camera->GetPosition().z) + 200)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
+			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+			BindShader(postProcessShader);
+			modelMatrix.ToIdentity();
+			viewMatrix.ToIdentity();
+			projMatrix.ToIdentity();
+			UpdateShaderMatrices();
+
+			glDisable(GL_DEPTH_TEST);
+
+			glActiveTexture(GL_TEXTURE0);
+			glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "sceneTex"), 0);
+			for (int i = 0; i < POST_PASSES; ++i)
+			{
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
+				glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "isVertical"), 0);
+
+				glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
+				quad->Draw();
+
+				// Now to swap the colour buffers and do the second blur pass
+				glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "isVertical"), 1);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
+				glBindTexture(GL_TEXTURE_2D, bufferColourTex[1]);
+				quad->Draw();
+			}
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glEnable(GL_DEPTH_TEST);
+		}
+	}
+}
+void Renderer::PresentScene()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(sceneShader);
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "diffuseTex"), 0);
+	quad->Draw();
 }
 
 void Renderer::MoveCamera()
@@ -179,7 +254,7 @@ void Renderer::DrawNode(SceneNode* n)
 		passInfoToShader(n->GetShader(), model, n);
 		glUniform1i(glGetUniformLocation(n->GetShader()->GetProgram(), "diffuseTex"), 10);
 		UpdateShaderMatrices();
-
+		
 		vector<Matrix4> frameMatrices;
 
 		const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
@@ -213,7 +288,6 @@ void Renderer::DrawNode(SceneNode* n)
 			n->Draw(*this);
 		}
 	}
-
 	for (vector<SceneNode*>::const_iterator i = n->GetChildIteratorStart(); i != n->GetChildIteratorEnd(); ++i)
 	{
 		DrawNode(*i);
@@ -280,13 +354,54 @@ bool Renderer::InitialiseShaders()
 	waterShader = new Shader("WaterVertex.glsl", "WaterFragment.glsl");
 	skyboxShader = new Shader("SkyboxVertex.glsl", "SkyboxFragment.glsl");
 	islandShader = new Shader("IslandVertex.glsl", "IslandFragment.glsl");
-	sceneShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	sceneShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl");
 	treeShader = new Shader("TreeVertex.glsl", "TreeFragment.glsl");
 	skeletonShader = new Shader("SkinningVertex.glsl", "TexturedFragment.glsl");
+	postProcessShader = new Shader("TexturedVertex.glsl", "ProcessFrag.glsl");
 
-	if (!waterShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !islandShader->LoadSuccess() || !sceneShader->LoadSuccess() || !treeShader->LoadSuccess() || !skeletonShader->LoadSuccess())
+	if (!waterShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !islandShader->LoadSuccess() || !sceneShader->LoadSuccess() || !treeShader->LoadSuccess() || !skeletonShader->LoadSuccess() || !postProcessShader->LoadSuccess())
 		return false;
 
+	return true;
+}
+bool Renderer::InitialiseBuffers()
+{
+	// Generate scene depth texture
+	glGenTextures(1, &bufferDepthTex);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+
+	// and colour texture
+	for (int i = 0; i < 2; ++i)
+	{
+		glGenTextures(1, &bufferColourTex[i]);
+		glBindTexture(GL_TEXTURE_2D, bufferColourTex[i]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	}
+
+	glGenFramebuffers(1, &bufferFBO);	// Render scene into this
+	glGenFramebuffers(1, &processFBO);	// Do post processing here
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
+
+	// We can check FBO attacment success using this command
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0])
+	{
+		return false;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	return true;
 }
 void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
@@ -351,10 +466,10 @@ void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[0].frequency"), 0.005);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[0].speed"), 0.5);
 
-	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].direction"), 1.0f, 1.0f);
+	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].direction"), 1.0f, 0.0f);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].amplitude"), 20.0);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].steepness"), 15.0);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].frequency"), 0.001);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].speed"), 1.0);
-	glUniform1i(glGetUniformLocation(shader->GetProgram(), "gerstnerWavesLength"), 1);
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "gerstnerWavesLength"), 2);
 }
