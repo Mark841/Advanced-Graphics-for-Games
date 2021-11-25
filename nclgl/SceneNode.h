@@ -42,6 +42,7 @@ public:
 	MeshAnimation* GetAnim() const { return anim; }
 	MeshMaterial* GetMaterial() const { return material; }
 	vector<GLuint> GetMatTextures() const { return matTextures; }
+	int GetCurrentFrame() const { return currentFrame; }
 
 	static bool CompareByCameraDistance(SceneNode* a, SceneNode* b) { return (a->distanceFromCamera < b->distanceFromCamera) ? true : false; }
 
@@ -68,4 +69,6 @@ protected:
 	GLuint texture;
 	std::vector<SceneNode*> children;
 	bool animated;
+	int currentFrame;
+	float frameTime;
 };

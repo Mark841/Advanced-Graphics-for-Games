@@ -16,6 +16,7 @@ public:
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
 	void ToggleDayNight() { activeDayNight = !activeDayNight; }
+	void SetWaves(int w) { waves = w; }
 
 	bool followWaypoints;
 
@@ -89,6 +90,5 @@ protected:
 	float time;
 	bool activeDayNight;
 
-	int currentFrame;
-	float frameTime;
+	int waves;
 };

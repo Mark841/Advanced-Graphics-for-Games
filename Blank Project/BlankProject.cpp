@@ -29,6 +29,18 @@ int main()	{
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_P)) {
 			renderer.ToggleDayNight();
 		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_1)) {
+			renderer.SetWaves(1);
+		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_2)) {
+			renderer.SetWaves(2);
+		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_3)) {
+			renderer.SetWaves(3);
+		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_4)) {
+			renderer.SetWaves(4);
+		}
 	}
 	return 0;
 }

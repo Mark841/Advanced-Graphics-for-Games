@@ -18,10 +18,8 @@ SkeletalAnimation::SkeletalAnimation(Mesh* mesh, MeshAnimation* anim, MeshMateri
 		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
 		matTextures.emplace_back(texID);
 	}
-	SetTransform(Matrix4::Translation(location)* Matrix4::Scale(Vector3(3, 800, 3)));
-
-	currentFrame = 0;
-	frameTime = 0.0f;
+	SetTransform(Matrix4::Translation(location)* Matrix4::Scale(Vector3(500, 500, 500)));
+	SetModelScale(Vector3(500, 500, 500));
 }
 SkeletalAnimation::~SkeletalAnimation(void)
 {

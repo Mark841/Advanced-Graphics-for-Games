@@ -13,6 +13,8 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour)
 	texture = 0;
 	modelScale = Vector3(1, 1, 1);
 	animated = false;
+	currentFrame = 0;
+	frameTime = 0.0f;
 }
 SceneNode::~SceneNode(void)
 {

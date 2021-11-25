@@ -16,6 +16,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	quad = Mesh::GenerateQuad();
 	miniMap = Mesh::LoadFromMeshFile("../Meshes/Sphere.msh");
 	time = 0.0f;
+	waves = 1;
 	activeDayNight = true;
 
 	heightMapMesh = new HeightMap(TEXTUREDIR"noiseTexture512.png");
@@ -56,7 +57,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	root->AddChild(heightMap);
 	root->AddChild(waterMap);
 
-	SkeletalAnimation* soldier = new SkeletalAnimation(Mesh::LoadFromMeshFile("Role_T.msh"), new MeshAnimation("Role_T.anm"), new MeshMaterial("Role_T.mat"), skeletonShader, Vector3(250,200,250));
+	SkeletalAnimation* soldier = new SkeletalAnimation(Mesh::LoadFromMeshFile("Role_T.msh"), new MeshAnimation("Role_T.anm"), new MeshMaterial("Role_T.mat"), skeletonShader, Vector3(heightMapSize.x / 2, 200, heightMapSize.z / 2));
 	heightMap->AddChild(soldier);
 
 	Mesh* cylinder = Mesh::LoadFromMeshFile("../Meshes/Cylinder.msh");
@@ -74,8 +75,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	currentFrame = 0;
-	frameTime = 0.0f;
 	waterRotate = 0.0f;
 	waterCycle = 0.0f;
 	init = true;
@@ -199,7 +198,7 @@ void Renderer::PresentScene()
 
 	// draw minimap
 	glBindTexture(GL_TEXTURE_2D, mapColourTex[0]);
-	glViewport(0, height / 2, width / 2, height / 2);
+	glViewport(0, (height / 4)*3, width / 4, height / 4);
 	quad->Draw();
 
 	// draw scene
@@ -277,17 +276,18 @@ bool Renderer::CheckCameraDistance(Vector3 distance, float speed)
 
 void Renderer::DrawNode(SceneNode* n)
 {
-	/*if (n->IsAnimated())
+	if (n->IsAnimated())
 	{
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+		modelMatrix = model;
 		passInfoToShader(n->GetShader(), model, n);
-		glUniform1i(glGetUniformLocation(n->GetShader()->GetProgram(), "diffuseTex"), 10);
+		glUniform1i(glGetUniformLocation(n->GetShader()->GetProgram(), "diffuseTex"), 11);
 		UpdateShaderMatrices();
 		
 		vector<Matrix4> frameMatrices;
 
 		const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
-		const Matrix4* frameData = n->GetAnim()->GetJointData(currentFrame);
+		const Matrix4* frameData = n->GetAnim()->GetJointData(n->GetCurrentFrame());
 
 		for (unsigned int i = 0; i < n->GetMesh()->GetJointCount(); ++i)
 		{
@@ -299,13 +299,13 @@ void Renderer::DrawNode(SceneNode* n)
 
 		for (int i = 0; i < n->GetMesh()->GetSubMeshCount(); ++i)
 		{
-			glActiveTexture(GL_TEXTURE10);
+			glActiveTexture(GL_TEXTURE11);
 			glBindTexture(GL_TEXTURE_2D, n->GetMatTextures()[i]);
 			n->GetMesh()->DrawSubMesh(i);
 		}
 	}
 	else
-	{*/
+	{
 		if (n->GetMesh())
 		{
 			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
@@ -316,7 +316,7 @@ void Renderer::DrawNode(SceneNode* n)
 
 			n->Draw(*this);
 		}
-	//}
+	}
 	for (vector<SceneNode*>::const_iterator i = n->GetChildIteratorStart(); i != n->GetChildIteratorEnd(); ++i)
 	{
 		DrawNode(*i);
@@ -536,5 +536,18 @@ void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].steepness"), 15.0);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].frequency"), 0.001);
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[1].speed"), 1.0);
-	glUniform1i(glGetUniformLocation(shader->GetProgram(), "gerstnerWavesLength"), 1);
+
+	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[2].direction"), 1.0f, 0.0f);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[2].amplitude"), 50.0);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[2].steepness"), 2.5);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[2].frequency"), 0.0005);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[2].speed"), 1.0);
+
+	glUniform2f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[3].direction"), 1.0f, 1.0f);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[3].amplitude"), 50.0);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[3].steepness"), 15.0);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[3].frequency"), 0.00001);
+	glUniform1f(glGetUniformLocation(shader->GetProgram(), "gerstnerWaves[3].speed"), 0.5);
+
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "gerstnerWavesLength"), waves);
 }
