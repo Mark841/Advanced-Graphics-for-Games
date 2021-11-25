@@ -14,7 +14,6 @@ const int POST_PASSES = 100;
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	quad = Mesh::GenerateQuad();
-	miniMap = Mesh::LoadFromMeshFile("../Meshes/Sphere.msh");
 	time = 0.0f;
 	waves = 1;
 	activeDayNight = true;
@@ -34,15 +33,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	Vector3 heightMapSize = heightMapMesh->GetHeightMapSize();
 	camera = new Camera(-15.0f, 0.0f, 0.0f, heightMapSize * Vector3(0.5f, 1.0f, 1.0f));
 	miniMapCamera = new Camera(-90.0f, 0.0f, 0.0f, camera->GetPosition());
-	sun = new Light(heightMapSize * Vector3(0.5f, 8.0f, 0.5f), Vector4(1, 1, 1, 1), heightMapSize.x*10);
+	sun = new Light(heightMapSize * Vector3(0.5f, 8.0f, 0.5f), Vector4(1, 1, 1, 1), heightMapSize.x*3);
 	
-	std::cout << heightMapSize << std::endl;
-
 	waypointReached = 0;
 	followWaypoints = true;
-	cameraWaypoints = new Vector3[2];
+	cameraWaypoints = new Vector3[3];
 	cameraWaypoints[0] = Vector3(heightMapSize * Vector3(0.5f, 0.5f, 0.5f));
 	cameraWaypoints[1] = Vector3(heightMapSize * Vector3(0.325f, 0.8f, 0.325f));
+	cameraWaypoints[2] = Vector3(2590.5, 902, 2640);
 
 	root = new SceneNode();
 	SceneNode* heightMap = new SceneNode();
@@ -100,7 +98,7 @@ Renderer::~Renderer(void)
 
 void Renderer::UpdateScene(float dt)
 {
-	if (followWaypoints && waypointReached != 3)
+	if (followWaypoints && waypointReached != 4)
 		MoveCamera();
 	else
 		camera->UpdateCamera(dt);
@@ -252,8 +250,23 @@ void Renderer::MoveCamera()
 			waypointReached++;
 		}
 	}
-	// IF REACHED FINAL POINT
+	// ROTATE TO FACE SOLDIER
 	if (waypointReached == 3)
+	{
+		float degreesForRotation = 0.5;
+		camera->SetPosition(Rotate(degreesForRotation, Vector3(2657, 765, 2657), camera->GetPosition()));
+		camera->SetYaw(camera->GetYaw() + degreesForRotation);
+		camera->SetPitch(camera->GetPitch() + degreesForRotation/10);
+
+		Vector3 direction = cameraWaypoints[2] - camera->GetPosition();
+		if (CheckCameraDistance(direction, 1))
+		{
+			camera->SetPosition(cameraWaypoints[2]);
+			waypointReached++;
+		}
+	}
+	// IF REACHED FINAL POINT
+	if (waypointReached == 4)
 	{
 		followWaypoints = false;
 		waypointReached = -1;
@@ -522,6 +535,14 @@ void Renderer::passInfoToShader(Shader* shader, Matrix4 model, SceneNode* n)
 	glUniform1i(glGetUniformLocation(shader->GetProgram(), "heightMapTex"), 10);
 	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_2D, heightMapTex);
+
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "treeTex"), 12);
+	glActiveTexture(GL_TEXTURE12);
+	glBindTexture(GL_TEXTURE_2D, treeTex);
+
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "treeBumpTex"), 13);
+	glActiveTexture(GL_TEXTURE13);
+	glBindTexture(GL_TEXTURE_2D, treeBump);
 	
 	// WAVE DATA 
 	glUniform1f(glGetUniformLocation(shader->GetProgram(), "time"), time);

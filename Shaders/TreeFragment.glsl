@@ -24,7 +24,6 @@ out vec4 fragColour;
 
 void main(void)
 {
-	//fragColour = nodeColour;
 	vec3 incident = normalize(lightPos - IN.worldPos);
 	vec3 viewDir = normalize(cameraPos - IN.worldPos);
 	vec3 halfDir = normalize(incident + viewDir);

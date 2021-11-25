@@ -33,7 +33,6 @@ protected:
 	void DrawPostProcess();
 	void DrawScene();
 	void DrawNode(SceneNode* n);
-	void DrawMiniMap();
 
 	void DayNightCycle(float dt);
 	Vector3 Rotate(float angle, Vector3 axis, Vector3 position);
@@ -62,7 +61,6 @@ protected:
 	GLuint mapColourTex[2];
 
 	Mesh* quad;
-	Mesh* miniMap;
 	Matrix4 mapViewMatrix;
 
 	Light* sun;
@@ -89,6 +87,5 @@ protected:
 	float waterCycle;
 	float time;
 	bool activeDayNight;
-
 	int waves;
 };
