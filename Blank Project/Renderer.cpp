@@ -113,8 +113,8 @@ void Renderer::UpdateScene(float dt)
 
 	root->Update(dt);
 
-	if (activeDayNight)
-		DayNightCycle(dt);
+	//if (activeDayNight)
+		//DayNightCycle(dt);
 }
 void Renderer::RenderScene()
 {
@@ -211,7 +211,7 @@ void Renderer::MoveCamera()
 	if (waypointReached == 0)
 	{
 		Vector3 direction = cameraWaypoints[0] - camera->GetPosition();
-		float speed = 5;
+		float speed = 2.5;
 
 		camera->SetPosition(camera->GetPosition() + (direction.Normalised() * speed));
 		if (CheckCameraDistance(direction, speed))
@@ -223,7 +223,7 @@ void Renderer::MoveCamera()
 	// GET BIRDS EYE VIEW
 	if (waypointReached == 1)
 	{
-		float degreesForRotation = 0.5;
+		float degreesForRotation = 0.25;
 		camera->SetPosition(Rotate(degreesForRotation, Vector3(4088, 765, 4088), camera->GetPosition()));
 		camera->SetYaw(camera->GetYaw() + degreesForRotation);
 
@@ -239,7 +239,7 @@ void Renderer::MoveCamera()
 	if (waypointReached == 2)
 	{
 		Vector3 direction = cameraWaypoints[1] - camera->GetPosition();
-		float speed = 5;
+		float speed = 2.5;
 
 		camera->SetPosition(camera->GetPosition() + (direction.Normalised() * speed));
 		camera->SetYaw(camera->GetYaw() + (speed/10) + 0.05);
@@ -253,7 +253,7 @@ void Renderer::MoveCamera()
 	// ROTATE TO FACE SOLDIER
 	if (waypointReached == 3)
 	{
-		float degreesForRotation = 0.5;
+		float degreesForRotation = 0.25;
 		camera->SetPosition(Rotate(degreesForRotation, Vector3(2657, 765, 2657), camera->GetPosition()));
 		camera->SetYaw(camera->GetYaw() + degreesForRotation);
 		camera->SetPitch(camera->GetPitch() + degreesForRotation/10);
