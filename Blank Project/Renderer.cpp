@@ -81,6 +81,7 @@ Renderer::~Renderer(void)
 {
 	delete root;
 	delete camera;
+	delete miniMapCamera;
 	delete[] cameraWaypoints;
 	delete quad;
 	delete waterShader;
@@ -89,11 +90,16 @@ Renderer::~Renderer(void)
 	delete skeletonShader;
 	delete postProcessShader;
 	delete sun;
+	delete heightMapMesh;
+	delete waterMapMesh;
 
 	glDeleteTextures(2, bufferColourTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &processFBO);
+	glDeleteFramebuffers(1, &mapFBO);
+	glDeleteTextures(2, mapColourTex);
+	glDeleteTextures(1, &mapDepthTex);
 }
 
 void Renderer::UpdateScene(float dt)
@@ -113,8 +119,8 @@ void Renderer::UpdateScene(float dt)
 
 	root->Update(dt);
 
-	//if (activeDayNight)
-		//DayNightCycle(dt);
+	if (activeDayNight)
+		DayNightCycle(dt);
 }
 void Renderer::RenderScene()
 {

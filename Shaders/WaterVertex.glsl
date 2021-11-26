@@ -41,15 +41,6 @@ vec3 gerstner_wave_position(vec3 position, float time)
 
 		wavePosition.x += (gerstnerWaves[i].direction.x * width);
 		wavePosition.z += (gerstnerWaves[i].direction.y * width);
-
-		if (position.x == 1.0 || position.x == -1.0)
-		{
-			wavePosition.x = position.x;
-		}
-		if (position.z == 1.0 || position.z == -1.0)
-		{
-			wavePosition.z = position.z;
-		}
 	}
 	return wavePosition;
 }
