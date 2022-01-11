@@ -15,7 +15,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	quad = Mesh::GenerateQuad();
 	time = 0.0f;
-	waves = 1;
+	waves = 2;
 	activeDayNight = true;
 
 	heightMapMesh = new HeightMap(TEXTUREDIR"noiseTexture512.png");
